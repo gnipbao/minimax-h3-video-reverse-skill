@@ -106,6 +106,6 @@ I2V-B 使用 `start_frame_time / start_frame_prompt / end_frame_time / end_frame
 
 ## 可选机器契约
 
-`examples/contract.json` 是字段示例，校验器检查：状态门控、源时间覆盖、参考帧范围、首尾帧能力、Job 时长、音频字段和 H3 格式。用户素材路径、截图与证据账本留在运行目录，不进入开源示例。
+新生产包用 `examples/evidence-contract.input.json` 的 v2 事实输入，按 [证据契约](evidence-contract.md) 编译和复核。首帧与 Motion、H3 三字段都来自同一组事实；直接改派生文案会被拒绝。每条交付路线必须独立覆盖源时间线，分段首帧必须符合切分点当前状态。用户素材路径、截图与证据账本留在私有运行目录。
 
-契约中的 `generation_ready` 只描述资源是否备齐；它不代表模型已运行或输出已通过相似度检查。示例的参考图片未附带，因此该值为 false。
+`examples/contract.json` 是 v1 兼容格式草稿；不能声明生成就绪。v2 中 `generation_ready` 会要求有效复核记录、已核实平台时长和本地素材哈希通过，但仍不代表模型已运行或输出已通过相似度检查。教学例的资源未附带，该值必须为 false。

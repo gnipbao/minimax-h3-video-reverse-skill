@@ -4,7 +4,22 @@
 
 由 [知识猫 / gnipbao](https://github.com/gnipbao) 的 V6 反推模板与历史视频反推实践整理。支持 **AUTO · T2VA · I2V · DUAL**，默认保真反推，也支持用户明确要求的 10 秒重编排、多轮修改和长视频分段。
 
-本项目提供 Agent Skill、使用教程、原创示例和本地校验工具。**不包含 H3 模型，不自动生成视频，不要求 API Key。** 0.1.0 为公开候选版本：已验证的软件检查与未验证的生成效果分别记录在 [验证说明](docs/validation.md)。
+本项目提供 Agent Skill、使用教程、原创示例和本地校验工具。**不包含 H3 模型，不自动生成视频，不要求 API Key。** 当前为 **0.2.0 候选版本**：事实绑定、确定性编译和复核门控已运行回归测试；真实生成效果仍待对照，见 [验证说明](docs/validation.md)。
+
+## 0.2.0 增强了什么
+
+本版重点减少三种反推错误：把几个动作合成一个、两套提示词各写各的、修改文案后仍沿用旧的“已核对”。
+
+| 能力 | 现在怎样处理 |
+| --- | --- |
+| 接触与动作顺序 | 接近、触碰、撤回、再次接触、反应分别绑定事实；可声明前驱顺序 |
+| 证据约束 | 单帧不能作为连续动作的全部依据；未知内容留在缺口表 |
+| T2VA / I2V 一致 | 从同一事实表编译，每条路线完整覆盖源时间线 |
+| 尾段与分段 | 自动抽取首尾帧；保留黑场、截止状态；续段绑定当前姿势 |
+| 修改后的复核 | 改事实、时间或资源会使旧复核失效；直接改派生 Prompt 会被拒绝 |
+| 声音边界 | 实际听过源声音与目标支持声音分别核对，均满足才编入 |
+
+这些检查能拦截明确的结构性漂移。事实句写错、帧中细节误读、相机与主体运动混淆，仍需实际观看和语义复核；脚本不理解画面。
 
 ## 快速开始
 
@@ -40,13 +55,13 @@ flowchart LR
   A[完整视频与用户目标] --> B{画面与时间线可访问}
   B -->|否| C[明确缺口与局部草稿]
   B -->|是| D[五遍读取与源事实表]
-  D --> E[真实镜头与状态链]
-  E --> F{选择交付形式}
+  D --> E[有证据 ID 的事实与状态链]
+  E --> F{从共享事实编译}
   F --> G[T2VA 全片时间线]
   F --> H[I2V 逐镜首帧与动作]
   G --> I[H3 格式与平台能力核对]
   H --> I
-  I --> J[提示词、装配表与检查结果]
+  I --> J[媒体与语义复核、提示词与装配表]
 ```
 
 它会先检查视频，再决定怎样描述。角色数量、画幅、风格、光线、速度和配乐都不从模板自动继承。
@@ -145,26 +160,40 @@ $minimax-h3-video-reverse
 - [8 秒产品展开：首尾帧与允许变化](examples/02-product-unfolding.md)
 - [30 秒段落如何拆成实际任务](examples/03-long-video-plan.md)
 - [能力不足、多轮修改与回归提示](examples/retest-prompts.md)
-- [机器校验契约示例](examples/contract.json)
+- [v2 事实输入示例](examples/evidence-contract.input.json)
+- [事实契约与严格复核流程](references/evidence-contract.md)
+- [v1 格式草稿，仅作兼容参考](examples/contract.json)
 
 示例均为原创教学设定，不附第三方视频，不冒充真实视频观察或模型生成记录。
 
 ## 本地辅助工具
 
-使用 Skill 本身不要求 Python。运行辅助检查需要 Python 3.10+；媒体元数据探测额外需要系统已安装 FFprobe。没有第三方 Python 依赖、联网请求、自动下载和密钥读取。
+阅读 Skill 和人工草稿不要求 Python。使用编译与检查工具需要 Python 3.10+；媒体探测需要系统已安装 FFprobe，抽帧另需 FFmpeg。没有第三方 Python 依赖、联网请求、自动下载和密钥读取。
 
 ```bash
 # 在仓库目录运行：检查文件、链接、示例与校验器回归
 python3 scripts/check_repo.py
 
-# 核对一份交付契约
-python3 scripts/validate_contract.py examples/contract.json
+# 编译虚构教学输入，输出仍为“未复核”
+python3 scripts/compile_contract.py examples/evidence-contract.input.json --output /tmp/h3-contract.json
+python3 scripts/validate_contract.py /tmp/h3-contract.json
 
 # 只读取本地视频元数据；不会分析画面和声音内容
 python3 scripts/probe_video.py /path/to/reference.mp4
+
+# 指定关键时刻；自动包含首尾帧，记录实际 PTS，仍需人工/视觉模型观看
+python3 scripts/sample_frames.py /path/to/reference.mp4 --output /tmp/h3-frames-new --at 0.5 2 4
 ```
 
-校验器会发现时间缺段/重叠、越界参考帧、未知首尾帧能力、超限 Job、H3 字段顺序、无依据的音频字段等结构问题。它不能判断画面是否看对、动作是否复刻成功、文字是否抄对，也不会把“通过”转成生成质量评分。
+对真实任务，完成媒体和语义检查后，按 [契约说明](references/evidence-contract.md) 填写当前摘要的复核记录，再运行：
+
+```bash
+python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed --verify-local-media
+```
+
+教学例没有媒体和复核记录，因此不能通过这条严格检查。不要自动把它改成 reviewed。v1 仅保留格式校验，不能声明生成就绪。
+
+校验器能检查事实引用、时间缺段/重叠、分段当前状态、音频通道、派生文字一致性、复核摘要和本地文件哈希。它不能判断画面是否看对或动作是否复刻成功。复核记录是执行者声明，哈希是字节一致性检查，两者都不是生成质量评分。
 
 ## 仓库结构
 
@@ -173,9 +202,10 @@ SKILL.md                 Agent 入口与执行协议
 agents/openai.yaml       Codex 显示信息
 references/              观察、输出、H3 格式、历史经验、来源
 examples/                原创教学案例与人工反测
-scripts/                 媒体元数据与契约/仓库检查
-tests/                   时间、能力与格式的回归测试
+scripts/                 PTS 抽帧、事实编译、契约与仓库检查
+tests/                   证据、动作顺序、分段、复核失效与格式回归
 docs/validation.md       实际验证范围与证据缺口
+docs/evolution-0.2.md    失败证据、修改决策、复测与回滚
 ```
 
 用户素材与生成结果放自己的项目目录。`outputs/`、`runs/`、凭据和媒体默认忽略；不要把运行数据写进已安装 Skill。

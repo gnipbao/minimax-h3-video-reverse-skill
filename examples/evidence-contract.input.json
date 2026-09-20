@@ -1,0 +1,53 @@
+{
+  "schema_version": 2,
+  "fixture": true,
+  "analysis_status": "PARTIAL",
+  "delivery": "DUAL",
+  "source": {
+    "media": {"path": "planned/source.mp4", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+    "duration_s": 10.0,
+    "timestamp_precision_s": 0.1,
+    "visual_access": "full",
+    "audio_status": "unavailable"
+  },
+  "intent": "faithful",
+  "intentional_deviations": [],
+  "capabilities": {"end_frames": false, "audio": "unknown", "max_job_duration_s": 15.0, "duration_verified": true},
+  "generation_ready": false,
+  "segments": [
+    {"id": "SH01", "kind": "shot", "start_s": 0.0, "end_s": 10.0, "end_condition": "settled"}
+  ],
+  "evidence": [
+    {
+      "id": "EV01", "kind": "frame", "range_s": [0.0, 0.0],
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asset": {"path": "planned/opening.png", "sha256": "1111111111111111111111111111111111111111111111111111111111111111"}
+    },
+    {
+      "id": "EV02", "kind": "clip", "range_s": [0.0, 10.0],
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asset": {"path": "planned/source.mp4", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"}
+    },
+    {
+      "id": "EV03", "kind": "frame", "range_s": [9.9, 9.9],
+      "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "asset": {"path": "planned/ending.png", "sha256": "2222222222222222222222222222222222222222222222222222222222222222"}
+    }
+  ],
+  "facts": [
+    {"id": "F01", "segment_id": "SH01", "kind": "identity", "range_s": [0.0, 10.0], "status": "observed", "evidence_ids": ["EV02"], "text": "A gray tabby cat and one red ball are on a pale wooden floor under soft light from screen-left."},
+    {"id": "F02", "segment_id": "SH01", "kind": "initial", "range_s": [0.0, 0.0], "status": "observed", "evidence_ids": ["EV01"], "text": "The cat is seated left of the ball, with both front paws resting on the floor."},
+    {"id": "F03", "segment_id": "SH01", "kind": "action", "range_s": [0.0, 2.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the cat lifts its camera-facing front paw toward the ball."},
+    {"id": "F04", "segment_id": "SH01", "kind": "action", "range_s": [2.0, 4.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the paw pad rests lightly on the ball while the ball stays in place."},
+    {"id": "F05", "segment_id": "SH01", "kind": "action", "range_s": [4.0, 5.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the paw withdraws toward the chest, leaving a visible gap from the ball."},
+    {"id": "F06", "segment_id": "SH01", "kind": "action", "range_s": [5.0, 6.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the same paw moves forward for a second contact and pushes the ball toward screen-right."},
+    {"id": "F07", "segment_id": "SH01", "kind": "action", "range_s": [6.0, 8.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the ball rolls rightward while the cat lowers its paw and turns its head to follow."},
+    {"id": "F08", "segment_id": "SH01", "kind": "state", "range_s": [8.0, 10.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the ball is stopped inside the right edge; the cat stays seated and watches it."},
+    {"id": "F09", "segment_id": "SH01", "kind": "ending", "range_s": [9.9, 9.9], "status": "observed", "evidence_ids": ["EV03"], "text": "the cat and the stationary ball remain visible in the final frame."},
+    {"id": "F10", "segment_id": "SH01", "kind": "camera", "range_s": [0.0, 10.0], "status": "observed", "evidence_ids": ["EV02"], "text": "the camera remains fixed with no internal cut."}
+  ],
+  "jobs": [
+    {"id": "T01", "mode": "T2VA", "source_range_s": [0.0, 10.0], "duration_s": 10.0, "opening_fact_ids": ["F02"], "closing_fact_ids": [], "reference_images": []},
+    {"id": "I01", "mode": "I2VA", "source_range_s": [0.0, 10.0], "duration_s": 10.0, "opening_fact_ids": ["F02"], "closing_fact_ids": [], "reference_images": [{"path": "planned/opening.png", "sha256": "1111111111111111111111111111111111111111111111111111111111111111"}]}
+  ]
+}

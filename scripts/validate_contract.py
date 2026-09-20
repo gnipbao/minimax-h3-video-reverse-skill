@@ -85,10 +85,15 @@ def validate_prompt(prompt: str, mode: str, duration: float, audio_omitted: bool
     return errors
 
 
-def validate(data: object, base_dir: Path | None = None) -> list[str]:
+def validate(data: object, base_dir: Path | None = None, *, require_reviewed: bool = False, verify_local_media: bool = False) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["Contract must be a JSON object"]
+    if data.get("schema_version") == 2:
+        from evidence_contract import validate_v2
+        return validate_v2(data, base_dir, require_reviewed, verify_local_media)
+    if require_reviewed or verify_local_media:
+        return ["Legacy v1 is a format-only draft; use v2 evidence and reviews for the strict gate"]
     if type(data.get("schema_version")) is not int or data.get("schema_version") != 1:
         errors.append("schema_version must be 1")
     status = data.get("analysis_status")
@@ -139,6 +144,8 @@ def validate(data: object, base_dir: Path | None = None) -> list[str]:
     ready = data.get("generation_ready")
     if not isinstance(ready, bool):
         errors.append("generation_ready must be boolean")
+    if ready:
+        errors.append("Legacy v1 cannot claim generation readiness; use the v2 evidence gate")
     if ready and (max_duration is None or capabilities.get("duration_verified") is not True):
         errors.append("Generation readiness requires a verified platform duration limit")
     if data.get("fixture") is True and ready:
@@ -253,10 +260,12 @@ def validate(data: object, base_dir: Path | None = None) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("contract", type=Path)
+    parser.add_argument("--require-reviewed", action="store_true", help="Require current media and semantic review declarations")
+    parser.add_argument("--verify-local-media", action="store_true", help="Check source, evidence and reference asset hashes")
     args = parser.parse_args()
     try:
         data = json.loads(args.contract.read_text(encoding="utf-8"))
-        errors = validate(data, args.contract.resolve().parent)
+        errors = validate(data, args.contract.resolve().parent, require_reviewed=args.require_reviewed, verify_local_media=args.verify_local_media)
     except (OSError, ValueError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 2

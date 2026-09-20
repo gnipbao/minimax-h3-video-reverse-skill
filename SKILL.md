@@ -16,7 +16,8 @@ description: 将参考视频反推为 MiniMax H3 可用的文生视频和逐镜�
 - 写 H3 可复制块前读 `references/h3-adapter.md`：三字段、首尾帧对齐、能力核实及格式冲突处理。
 - 动作、遮挡、变形、混合媒介或改编遇到困难时读 `references/historical-lessons.md`。
 - 查来源、版本边界与未验证事项时读 `references/provenance.md`。
-- 示例在 `examples/`；机器核对契约见 `examples/contract.json` 和 `scripts/validate_contract.py`。
+- 生成反推生产包前读 `references/evidence-contract.md`：事实绑定、确定性编译、复核失效、双模式一致与分段继承。
+- 示例在 `examples/`；v2 输入示例见 `examples/evidence-contract.input.json`；旧 `examples/contract.json` 仅作格式草稿。
 
 ## Workflow
 
@@ -39,6 +40,8 @@ python3 scripts/probe_video.py /path/to/reference.mp4
 
 脚本只核对文件和时间元数据，不观看画面、不听声音，也不下载链接。视觉/听觉检查必须用宿主真实提供的能力；缺少时如实降级。
 
+需要核对关键帧且本地已有 FFmpeg 时，运行 `scripts/sample_frames.py VIDEO --output NEW_DIR --at 0.5 2 4`。脚本自动带上首尾帧，记录实际 PTS、帧序号和哈希。输出仍为未观看；逐帧检查或实际播放之后才能记录复核。不要用平均帧率替代 PTS。
+
 ### 2. 建立源视频事实
 
 按五遍逻辑执行：全局浏览 → 真实切镜 → 连续时间覆盖 → 关键动作加密检查 → 首尾及末三分之一倒查。
@@ -54,7 +57,11 @@ python3 scripts/probe_video.py /path/to/reference.mp4
 - 声音：仅实际核实或用户要求添加的内容；来源与新增分开。
 - 文字：只抄可辨内容；其余标不可辨，不依常识补全。
 
-证据类型采用 `observed / continuous / uncertain / user_requested`，只放核对记录。不要与软件测试的 E1/E2 等级混用，也不把内部标签塞进生成 Prompt。
+事实状态采用 `observed / uncertain / user_requested`，与证据通道 `frame / clip / audio` 分开。连续运动需要连续片段或多个不同时刻的帧；单帧不证明速度、接触顺序或因果。无法确认的事实留在缺口表，不进入可复制 Prompt。不要与软件测试的 E1/E2 等级混用，也不把内部标签塞进生成 Prompt。
+
+对关键动作逐项核对：准备 → 接近 → 接触 → 撤回/释放 → 第二次动作 → 反应 → 截止状态。只登记实际存在的阶段，给每段独立事实 ID。发生先后明确时用 `after` 记录前驱；不能凭两张端点帧补齐中间过程。先看动作，再翻译成生成语言。
+
+写每条事实时区分“可见形态”与“原因解释”：被遮挡不等于消失，出画不等于落地，粉尘出现不自动证明它来自特定物体。终态用 `settled / ongoing / cutoff / unknown` 标记；未完成动作不补成完整结局。
 
 ### 3. 先拆镜，再选模式
 
@@ -89,6 +96,8 @@ H3 核心块按 `integrated_multimodal_description`、`overall_soundscape`、`no
 
 每个独立生成任务的时间、Shot 编号和 Picture 编号从本任务重新开始；另保留 `source_range → target_range` 映射。时间格式补零只是序列化，不能升级观察精度。
 
+生产包先写 v2 事实契约，再运行编译器生成 H3 块、首帧和 Motion 文案；不得分别手写 T2VA 与 I2V 的新剧情。编译器自动选取各 Job 范围内可交付事实，DUAL 的两条路线都必须完整覆盖源时间线。拆同一镜头时，后一段首帧必须绑定切分点的当前状态，不能重用片头姿势。
+
 用户要求 30 秒等长段时，先确认目标平台单次时长。官方能力参考和核实日期见适配文档；不能把旧任务中写过“30秒生成”当能力证据。超出上限则拆成实际 Job，再按剪辑时间线组装，并传递首尾状态。
 
 仅有尾帧时，无法知道真实先前动作：严格反推返回缺口；用户授权创作时可交接 L2VA。Ref2VA 仅在用户要将参考素材实际送入多模态生成平台且能力可用时交接，不与“观看视频后写文字”混为一谈。
@@ -100,10 +109,17 @@ H3 核心块按 `integrated_multimodal_description`、`overall_soundscape`、`no
 有文件工具且用户要文件时，交付到用户目标或项目 `outputs/h3-reverse/<run>/`；不要写入已安装 Skill。按需生成 `analysis.md`、`prompts.md`、`contract.json`。不要为仅需一句提示词的任务强制生成大型报告。
 
 ```bash
+python3 scripts/compile_contract.py /path/to/observations.json --output /path/to/contract.json
 python3 scripts/validate_contract.py /path/to/contract.json
 ```
 
-验证器只证明契约结构与部分格式符合要求。完整观看、听音、反推事实和生成相似度必须另行核实；不可用检查通过推导“复刻成功”。
+编译后分别复核媒体和语义，再按 `references/evidence-contract.md` 写当前摘要绑定的复核记录。编译器不会自动批准。修改事实、源文件、时间、模式或能力后，必须重新编译并复核；不要只改 `derived` 提示词。
+
+```bash
+python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed --verify-local-media
+```
+
+严格检查核对事实引用、通道、时间范围、派生文本、复核记录和文件哈希；它不能判断自然语言是否忠实于画面。完整观看、听音、语义核对和生成相似度仍需要真实能力。缺少脚本执行能力时可输出人工核对草稿，并明确尚未通过上述检查；不伪造检查结果。
 
 交付简短状态说明与可复制内容。用户仅要 Prompt 时，能力缺口/改编说明放代码块外，代码块里保持生成语句。DUAL 必须复用同一事实表；不同版本共享镜头顺序、事件与终态。
 
