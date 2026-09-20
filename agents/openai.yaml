@@ -1,0 +1,4 @@
+interface:
+  display_name: "MiniMax H3 视频反推"
+  short_description: "从参考视频拆解真实镜头、首帧和连续动作，编译 H3 提示词"
+  default_prompt: "使用 $minimax-h3-video-reverse 反推参考视频，保留真实镜头、动作顺序与终态，输出可复制的 H3 提示词。"

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "fixture": true,
+  "analysis_status": "PARTIAL",
+  "source": {
+    "duration_s": 10.0,
+    "timestamp_precision_s": 0.1,
+    "visual_access": "full",
+    "audio_status": "unavailable"
+  },
+  "intent": "faithful",
+  "intentional_deviations": [],
+  "capabilities": {
+    "end_frames": false,
+    "max_job_duration_s": 15.0,
+    "duration_verified": true
+  },
+  "generation_ready": false,
+  "segments": [
+    {
+      "id": "SH01",
+      "kind": "shot",
+      "start_s": 0.0,
+      "end_s": 10.0,
+      "initial_state": "Cat seated left of one red ball, both paws resting on the floor.",
+      "end_state": "Cat still seated; ball stopped inside the right edge.",
+      "i2v_type": "I2V-A",
+      "reference_frame_s": 0.0,
+      "reference_prompt": "Photorealistic vertical shot of a gray tabby cat and one red ball on a pale wooden floor.",
+      "motion_prompt": "Reach, rest paw on ball, withdraw, push on a second contact, watch the rolling ball until it stops."
+    }
+  ],
+  "jobs": [
+    {
+      "id": "J01",
+      "mode": "I2VA",
+      "duration_s": 10.0,
+      "source_shots": [
+        "SH01"
+      ],
+      "reference_images": [
+        "planned/cat-first-frame.png"
+      ],
+      "prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] A photorealistic vertical 9:16 continuous 10-second shot begins in the composition of <Picture 1>, with the gray tabby cat seated left of the single red ball on the pale wooden floor. Preserve the cat's markings, proportions, the ball's shape, and the soft light from screen-left. The camera holds steady. From 0 to 2 seconds, the cat lifts its camera-facing front paw toward the ball. From 2 to 4 seconds, its paw pad rests lightly on top of the ball without moving it. From 4 to 5 seconds, the paw withdraws toward the chest, leaving a visible gap. From 5 to 6 seconds, the same paw moves forward again and pushes the ball toward screen-right. Keep the two contacts visibly separate. From 6 to 8 seconds, the ball rolls rightward while the cat lowers its paw and turns its head to follow. From 8 to 10 seconds, the ball stops inside the right edge of the frame. The cat stays seated in its original position, watching the ball. End with both visible, without an internal cut or a duplicated ball.\n\noverall_soundscape: N/A\n\nnon_diegetic_music: N/A"
+    }
+  ]
+}

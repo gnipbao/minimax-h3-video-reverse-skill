@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+.env
+.env.*
+outputs/
+runs/
+private/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.cookie
+*.pem
