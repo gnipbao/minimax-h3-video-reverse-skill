@@ -182,6 +182,6 @@ docs/validation.md       实际验证范围与证据缺口
 
 ## 来源与许可
 
-原方法：[MiniMax H3 视频反推提示词模板V6](https://ycnj2htgnvdy.feishu.cn/wiki/E55pwC9xYinpHekxrGscwgPTn0d)。整理方法：[dao-skill](https://github.com/gnipbao/dao-skill)。完整来源边界见 [provenance](references/provenance.md)。
+本项目根据维护者的方法模板与历史反推实践整理。整理方法：[dao-skill](https://github.com/gnipbao/dao-skill)。完整来源边界见 [provenance](references/provenance.md)。
 
 本仓库原创代码、文档与教学示例采用 [MIT License](LICENSE)。MiniMax H3 模型、官方资料和第三方素材不因本仓库开源而更改许可。本项目为社区整理，与 MiniMax 官方没有隶属关系。

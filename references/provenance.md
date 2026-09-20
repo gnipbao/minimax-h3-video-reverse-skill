@@ -12,7 +12,7 @@
 | [MiniMax H3 官方页面](https://design.minimax.io/h3) | 2026-09-20 检查能力 FAQ 与官方资源链接 | 记录当时最长 15 秒及 FL2VA/Ref2VA 区分；运行时仍核实平台 |
 | dao-skill | 生成、运行目录、吸收与评估约定 | 组织成可安装的单流程 Skill，区分结构测试和生成效果 |
 
-原文入口：[MiniMax H3 视频反推提示词模板V6](https://ycnj2htgnvdy.feishu.cn/wiki/E55pwC9xYinpHekxrGscwgPTn0d)。链接可能需要作者授权；本仓库不会修改其访问权限。
+原始方法文档仅作为设计输入；本仓库不提供其访问入口，也不分发全文或附件。
 
 ## 相近资产与决策
 
