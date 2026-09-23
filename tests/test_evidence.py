@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from evidence_contract import compile_contract, digest, file_digest, input_errors
+from evidence_contract import compile_contract, digest, file_digest, input_errors, narrative_digest
 from validate_contract import validate
 
 
@@ -20,11 +20,21 @@ def fixture():
 
 def reviewed(data):
     """Synthetic receipt for gate tests only; never applied to user media."""
+    data = deepcopy(data)
+    if "narrative_review" not in data:
+        data["narrative_review"] = {
+            "status": "confirmed", "revision": 1,
+            "summary": "Fictional fixture: the cat touches, withdraws, pushes the ball again and watches it stop.",
+            "target": "Preserve the declared action sequence and ending; no unverified sound.",
+            "open_questions": [],
+            "receipt": {"actor": "user", "message": "Synthetic fixture reply: use that interpretation."},
+        }
+        data["narrative_review"]["receipt"]["scope_digest"] = narrative_digest(data)
     out = compile_contract(data)
     common = {"status": "reviewed", "input_digest": digest(out), "reviewer": "synthetic-test", "notes": "Fictional gate fixture, not a media observation."}
     out["reviews"] = {
         "media": dict(common, evidence_ids=[e["id"] for e in out["evidence"]], full_timeline_viewed=True, tail_rechecked=True),
-        "semantic": dict(common, fact_text_checked=True, route_parity_checked=True, reference_alignment_checked=True),
+        "semantic": dict(common, fact_text_checked=True, route_parity_checked=True, reference_alignment_checked=True, narrative_alignment_checked=True),
     }
     return out
 

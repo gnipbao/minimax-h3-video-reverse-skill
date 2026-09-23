@@ -10,9 +10,18 @@ Prompt 语言：英文（默认）/ 中文
 目标时长：沿用原片或用户指定
 声音：保留已核实声音 / 仅视觉 / 用户另行设计
 目标平台：名称、单次时长、首尾帧能力；未知可留空
+交互：默认先复述并等待确认；已有当前确认直接复用；明确免确认时记录跳过
 ```
 
 输出模式是交付形式；H3 T2VA/I2VA/FL2VA 是生成任务形式，两者不要混为一列。`I2V-B` 是本 Skill 的镜头路线名，不是 API 模型 ID。
+
+## 第一阶段：内容理解与确认
+
+新素材先输出中文复述：视频内容、事件因果或视觉表达、真实结尾、目标保留/改动与关键疑点，然后请求用户确认或纠正。不要先写英文 Prompt 再问“满意吗”。具体纠正与复用规则见 [确认协议](narrative-confirmation.md)。
+
+`interaction_status=WAITING_FOR_CONFIRMATION` 是对话阶段；`analysis_status` 仍按媒体证据填写。确认前可继续观察、记录事实，不能交付 T2VA/I2V/DUAL 提示词。用户明确跳过则注明 waived，不声称 confirmed。格式要求“一段提示词”不跳过这一步。
+
+确认完成后的最终内容必须与当前复述一致。H3 三字段保持原样，不把用户问答或确认字段塞进生成块。仅要一段的用户得到一段生成描述，必要能力说明放块外；一段文本不代表平台能够单次生成任意时长。
 
 ## 状态说明
 
@@ -24,6 +33,7 @@ scope: visual
 audio_status: unavailable
 timestamp_precision_s: 0.1
 intent: faithful
+interaction_status: WAITING_FOR_CONFIRMATION
 notes: 视觉范围已核对；声音内容未核实。N/A 不代表原片静音。
 ```
 
@@ -94,7 +104,7 @@ I2V-B 使用 `start_frame_time / start_frame_prompt / end_frame_time / end_frame
 
 在源事实之外维护 `intentional_deviations`：具体改变、用户要求、目标时间与保留项。例：“将原两镜改为 10 秒连续收紧景别；保留举杯→饮用→看镜头的顺序”。不声称原片本来就是一镜到底。
 
-只重写用户要求改变的部分。实际参考图优先于旧生图文案；用户修正事实后需要回查视频，不能仅把更顺口的说法当证据。无需每轮重新确认已明确的画幅、语言与时长。
+只重写用户要求改变的部分。实际参考图优先于旧生图文案；用户修正事实后需要回查视频，不能仅把更顺口的说法当证据。剧情、关键动作、视觉机制、终态或声音目标发生改变时更新复述；已明确“按这个改完直接写”则无需再问。只改语言、排版或模式不重新确认叙事，必要的平台和参考图检查仍执行。
 
 ## 30 秒与长视频
 
@@ -106,6 +116,6 @@ I2V-B 使用 `start_frame_time / start_frame_prompt / end_frame_time / end_frame
 
 ## 可选机器契约
 
-新生产包用 `examples/evidence-contract.input.json` 的 v2 事实输入，按 [证据契约](evidence-contract.md) 编译和复核。首帧与 Motion、H3 三字段都来自同一组事实；直接改派生文案会被拒绝。每条交付路线必须独立覆盖源时间线，分段首帧必须符合切分点当前状态。用户素材路径、截图与证据账本留在私有运行目录。
+新生产包用 `examples/evidence-contract.input.json` 的 v2 事实结构，另按 [确认协议](narrative-confirmation.md) 建立真实任务的 narrative_review，再按 [证据契约](evidence-contract.md) 编译和复核。教学输入没有用户确认，只能编译为兼容草稿；不能复制它绕过新任务确认。首帧与 Motion、H3 三字段都来自同一组事实；直接改派生文案会被拒绝。每条交付路线必须独立覆盖源时间线，分段首帧必须符合切分点当前状态。用户素材路径、截图与证据账本留在私有运行目录。
 
-`examples/contract.json` 是 v1 兼容格式草稿；不能声明生成就绪。v2 中 `generation_ready` 会要求有效复核记录、已核实平台时长和本地素材哈希通过，但仍不代表模型已运行或输出已通过相似度检查。教学例的资源未附带，该值必须为 false。
+`examples/contract.json` 是 v1 兼容格式草稿；不能声明生成就绪。v2 中 `generation_ready` 会要求当前叙事确认或明确豁免、有效媒体/语义复核、已核实平台时长和本地素材哈希通过，但仍不代表模型已运行或输出已通过相似度检查。教学例的资源未附带，该值必须为 false。

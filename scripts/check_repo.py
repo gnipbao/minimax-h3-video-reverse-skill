@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     errors = []
-    required = ["SKILL.md", "README.md", "LICENSE", "agents/openai.yaml", "docs/validation.md", "examples/contract.json", "examples/evidence-contract.input.json"]
+    required = ["SKILL.md", "README.md", "LICENSE", "agents/openai.yaml", "docs/validation.md", "examples/contract.json", "examples/evidence-contract.input.json", "references/narrative-confirmation.md", "examples/04-narrative-confirmation.md"]
     for name in required:
         if not (ROOT / name).is_file():
             errors.append(f"Missing {name}")

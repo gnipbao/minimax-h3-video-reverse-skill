@@ -37,6 +37,8 @@ def main():
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(f"Compiled {len(result['derived']['jobs'])} jobs. Reviews are not granted automatically.")
+    if "narrative_review" not in result:
+        print("Legacy draft only: narrative confirmation is missing; do not deliver as a confirmed prompt.")
     return 0
 
 

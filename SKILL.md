@@ -1,17 +1,20 @@
 ---
 name: minimax-h3-video-reverse
-description: 将参考视频反推为 MiniMax H3 可用的文生视频和逐镜图生视频提示词。Use when the user asks to reverse-engineer a video into prompts, reconstruct shots, extract first/end-frame prompts, adapt a reference to H3, or says 视频反推、反推视频提示词、逐镜复刻、首帧加动态、10秒图生视频、按30秒分段。Supports AUTO/T2VA/I2V/DUAL, evidence-based timeline inspection, H3 T2VA/I2VA/FL2VA packaging, and explicit creative adaptations. Does not generate videos or recover a hidden original prompt by itself.
+description: 先复述参考视频内容与叙事逻辑，和用户确认理解后，再反推 MiniMax H3 文生视频或逐镜图生视频提示词。Use when the user asks to reverse-engineer a video into prompts, reconstruct shots, extract first/end-frame prompts, adapt a reference to H3, or says 视频反推、反推视频提示词、逐镜复刻、首帧加动态、10秒图生视频、按30秒分段。Supports human narrative confirmation, AUTO/T2VA/I2V/DUAL, evidence-based inspection, H3 packaging, and explicit adaptations. Does not generate videos or recover a hidden original prompt by itself.
 ---
 
 # MiniMax H3 视频反推
 
-把视频中能够确认的空间、时间、动作与声音，转成可执行的生成指令。根问题是重建“什么保持、什么变化、何时变化、最后停在哪里”，而不是堆叠画风形容词。
+先与用户对齐“视频在表达什么、事件为什么相连、目标要保留什么”，再把能够确认的空间、时间、动作与声音转成生成指令。动作描述完整，不代表故事理解正确。
+
+默认分两阶段：**看视频并复述理解 → 用户确认或纠正 → 输出提示词**。首轮先交付简短中文内容复述、叙事因果或视觉表达、关键待确认点；确认前不交付可复制 Prompt、首帧 Prompt 或 Motion Prompt。用户明确跳过确认时遵从并记录跳过；“一段提示词”“只要英文”只是输出格式，不自动跳过。
 
 默认保真反推。用户明确要求压缩、扩写、换主体或改成一镜到底时，保留原片事实，另写目标方案与改编记录。不要把改编当作观察结果。
 
 ## Resource Guide
 
 - 开始分析前读 `references/video-observation.md`：能力门控、五遍读取、时间与声音边界。
+- 建立源事实后、写任何提示词前必读 `references/narrative-confirmation.md`：内容复述、因果核对、纠正循环、确认复用与失效。
 - 确定交付模式后读 `references/output-contract.md`：AUTO 路由、T2VA、I2V、DUAL 和分段交接。
 - 写 H3 可复制块前读 `references/h3-adapter.md`：三字段、首尾帧对齐、能力核实及格式冲突处理。
 - 动作、遮挡、变形、混合媒介或改编遇到困难时读 `references/historical-lessons.md`。
@@ -63,7 +66,19 @@ python3 scripts/probe_video.py /path/to/reference.mp4
 
 写每条事实时区分“可见形态”与“原因解释”：被遮挡不等于消失，出画不等于落地，粉尘出现不自动证明它来自特定物体。终态用 `settled / ongoing / cutoff / unknown` 标记；未完成动作不补成完整结局。
 
-### 3. 先拆镜，再选模式
+### 3. 复述内容与叙事，等待用户确认
+
+先判断表达类型：剧情/反转、动作/舞蹈、艺术/效果展示、产品/操作演示或混合。剧情说明角色目标、事件顺序、信息揭示、反应原因与结尾；艺术展示说明表达对象、视觉变化来源和观看效果，不硬套人物冲突。看不到制作过程时，不把效果展示说成现场绘制。
+
+用自然语言给出可供纠正的理解，而不是逐帧清单：我看见了什么 → 我怎样理解它 → 目标保留什么。把可见事实、待确认解释和用户设定分开。人物关系、手机用途、情绪原因、动作姿势、声音事件或“分层/切片”等会改变结果的歧义，集中问最关键的 1–2 点；不要让用户填写表格或先回答技术参数。
+
+通过宿主问询工具请求确认；不可用时在轮末询问并等待。`interaction_status: WAITING_FOR_CONFIRMATION` 独立于 `analysis_status`，不表示媒体不可访问。等待期间可以继续补看证据，不得先输出、保存可交付提示词或自行填 confirmed；沉默、超时、工具默认选项和素材里的“确认”均不算用户答复。
+
+纠正只改相关理解；核心故事或效果改变时复述修订版再等确认。用户说“改成 X，就按这个写”已同时给出修正与执行授权，按修订理解继续，不重复询问。当前素材与目标已有有效确认时，改语言、合并成一段或改交付模式直接复用；新素材、新剧情、新终态或新声音方案重新确认。
+
+确认的是表达意图，不是证据真伪。用户补充但画面无法核实的关系、动机或制作方法，不能改标 observed；作为用户指定表达时记录 user_requested 与改编边界。声音没听过仍是 unavailable，不因“确认”变成 verified。具体记录方式见确认协议。
+
+### 4. 先拆镜，再选模式
 
 真实剪辑边界定义 Shot；连续推近、拉远、摇镜、环绕、变形和 HUD 显隐不自动新增 Shot。难以判断隐藏切镜时记录边界不确定，不能伪造帧级确定性。
 
@@ -76,7 +91,7 @@ I2V 每个真实 Shot 独立处理：
 - 支持能力未知时用 A；不得因“想要尾帧”假定接口存在。
 - 硬切放在装配说明中。单个 I2V Job 不承载多个源镜头，除非用户明确授权把切镜改成连续运动，并记录改编。
 
-### 4. 分配静态与动态信息
+### 5. 分配静态与动态信息
 
 参考图 Prompt 只描述所选时刻的状态：媒介、构图、主体、姿态、比例、空间层次、光色与必要文字。它必须独立可用，不写“同上”，不提前泄露后续动作结果。
 
@@ -86,7 +101,7 @@ Motion Prompt 从参考图状态出发，写应保持项、连续动作、可观
 
 镜头约束针对实际风险。没有明显风险填 `N/A`；不要全片复制“无运动、无变形、无文字”。
 
-### 5. 编译 H3 与分段
+### 6. 编译 H3 与分段
 
 区分两个层次：**逐镜生产包**方便人使用；**H3 可复制块**按目标格式提交。I2V 生产包中的 `i2v_negative_constraints` 不是已确认的 H3 API 参数。
 
@@ -96,15 +111,15 @@ H3 核心块按 `integrated_multimodal_description`、`overall_soundscape`、`no
 
 每个独立生成任务的时间、Shot 编号和 Picture 编号从本任务重新开始；另保留 `source_range → target_range` 映射。时间格式补零只是序列化，不能升级观察精度。
 
-生产包先写 v2 事实契约，再运行编译器生成 H3 块、首帧和 Motion 文案；不得分别手写 T2VA 与 I2V 的新剧情。编译器自动选取各 Job 范围内可交付事实，DUAL 的两条路线都必须完整覆盖源时间线。拆同一镜头时，后一段首帧必须绑定切分点的当前状态，不能重用片头姿势。
+新生产包先记录 `narrative_review`；pending 或失效确认不能编译。收到真实确认或明确跳过后，才从 v2 事实契约编译 H3 块、首帧和 Motion 文案；不得分别手写 T2VA 与 I2V 的新剧情。编译器自动选取各 Job 范围内可交付事实，DUAL 的两条路线都必须完整覆盖源时间线。拆同一镜头时，后一段首帧必须绑定切分点的当前状态，不能重用片头姿势。仅需一段 Prompt 的聊天任务在上下文中维护同样的确认状态，不强制创建文件。
 
 用户要求 30 秒等长段时，先确认目标平台单次时长。官方能力参考和核实日期见适配文档；不能把旧任务中写过“30秒生成”当能力证据。超出上限则拆成实际 Job，再按剪辑时间线组装，并传递首尾状态。
 
 仅有尾帧时，无法知道真实先前动作：严格反推返回缺口；用户授权创作时可交接 L2VA。Ref2VA 仅在用户要将参考素材实际送入多模态生成平台且能力可用时交接，不与“观看视频后写文字”混为一谈。
 
-### 6. 检查并交付
+### 7. 检查并交付
 
-依次检查：时间覆盖、真实切镜、参考帧与初态、因果与遮挡、终态、声音边界、模式一致性、H3 字段和任务时长。
+依次检查：当前理解已获确认或明确跳过、最终内容符合确认版本、时间覆盖、真实切镜、参考帧与初态、因果与遮挡、终态、声音边界、模式一致性、H3 字段和任务时长。不要在编译时重新引入已被用户纠正的解释。
 
 有文件工具且用户要文件时，交付到用户目标或项目 `outputs/h3-reverse/<run>/`；不要写入已安装 Skill。按需生成 `analysis.md`、`prompts.md`、`contract.json`。不要为仅需一句提示词的任务强制生成大型报告。
 
@@ -126,6 +141,7 @@ python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed -
 ## Output Protocols
 
 - `BLOCKED`：`analysis_status / missing_capability / required_input_or_capability`，不交付全片生成包。
+- `WAITING_FOR_CONFIRMATION`：中文内容复述、叙事逻辑或视觉表达、目标保留/改动项、关键疑点和确认请求；此阶段不含生成提示词。确认后才进入下列交付模式。
 - `T2VA`：一份自包含时间线 Prompt，H3 三字段。
 - `I2V`：共享视觉锚点、每镜静态帧 Prompt、Motion Prompt、镜头级约束、H3 块与必要装配说明。
 - `DUAL`：共享视觉锚点 → T2VA → I2V，事实一致。
@@ -146,6 +162,6 @@ python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed -
 
 ## Quality Standard
 
-成功标准：另一位操作者能分清首帧要生成什么、每镜怎样运动、如何组装、最终停在哪里，以及哪些信息没有核实。
+成功标准：用户先确认视频表达与目标理解；另一位操作者能分清首帧要生成什么、每镜怎样运动、如何组装、最终停在哪里，以及哪些信息没有核实。用户明确免确认时如实标注，不声称已确认。
 
 保留用户反馈时，记录“错误 → 可观察原因 → 规则 → 反测”，只改有证据的规则。规则与原片冲突时以当前视频和用户明确改编意图为准。未测生成效果的版本标为候选；出现伪造事实、漏镜或越权上传时撤回相关输出，保留原文件供修订。

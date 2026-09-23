@@ -6,10 +6,11 @@
 
 1. 实际观看完整时间线；动作快、遮挡或疑似切镜处补看连续内容。先记录视觉终点和末帧。
 2. 写证据条目：实际帧/片段/音轨、源文件哈希、真实时间范围、本地证据文件及哈希。
-3. 写最小事实：一个可检查的状态或动作一条；英文输出时在这一层翻译一次。不同模式不重复编造文案。
-4. 分配 Job：源范围、目标时长、参考帧对应的状态 ID。每条交付路线完整覆盖源时间。
-5. 编译：生成三字段 H3 块、首帧、Motion、尾帧以及事实 ID 清单。
-6. 媒体复核与语义复核完成后填写当前摘要的复核记录。严格检查通过后再标注交付状态。
+3. 整理最小事实，复述内容、叙事逻辑或视觉表达，与用户确认；按 [确认协议](narrative-confirmation.md) 保存 narrative_review。pending 时停止提示词生产，继续处理事实与疑点。
+4. 确认或明确豁免后写用于生产的最小事实：一个可检查状态或动作一条；英文输出在这一层翻译一次。用户指定但未验证的含义保持 user_requested，不升级为 observed。
+5. 分配 Job：源范围、目标时长、参考帧对应的状态 ID。每条交付路线完整覆盖源时间。
+6. 编译：先检查 narrative_review，再生成三字段 H3 块、首帧、Motion、尾帧以及事实 ID 清单。
+7. 媒体复核与语义复核完成后填写当前摘要的复核记录。语义复核也检查事实/提示词是否符合当前用户确认；严格检查通过后再标注交付状态。
 
 仅格式草稿或没有工具的聊天任务可以人工执行同一流程；不得把它标为脚本验证过的生产包。
 
@@ -20,6 +21,7 @@
 | 部分 | 内容 | 规则 |
 | --- | --- | --- |
 | source | media、duration_s、timestamp_precision_s、visual_access、audio_status | duration 是视觉范围；media 包含 path、sha256 |
+| narrative_review | status、revision、summary、target、open_questions、receipt | 新任务必填；pending 不能编译，confirmed/waived 需真实用户回复及当前 scope_digest；不是 H3 字段 |
 | capabilities | max_job_duration_s、duration_verified、end_frames、audio | audio = supported / unsupported / unknown；独立于是否听过源音轨 |
 | segments | id、kind=shot、start_s、end_s、end_condition | 完整连续覆盖；黑场/字卡要保留；end_condition = settled / ongoing / cutoff / unknown |
 | evidence | id、kind、range_s、source_sha256、asset | kind = frame / clip / audio；单帧起止时间相同，使用真实 PTS |
@@ -46,7 +48,7 @@
 
 - observed：必须引用相符通道的直接证据。运动需要连续片段或至少两个不同时间的帧；这些只是最低结构要求，不能保证中间动作已看清。
 - uncertain：保留在缺口清单，不编入任何模式的生成文案；analysis_status 为 PARTIAL。
-- user_requested：新加的内容；必须有 request 原话或准确转述，并明确 intent=adapted 与 intentional_deviations。它不是视频观察事实。
+- user_requested：用户指定的新增内容，或画面无法核实但用户要求采用的关系/动机/表达；必须有 request 原话或准确转述，并明确 intent=adapted 与 intentional_deviations。它不是视频观察事实；此处 adapted 也可以只表示语义取向由用户指定，不声称原片视觉被改动。
 
 事实范围采用源秒数，不能越过所属 Shot。单帧必须小于视觉结束时刻；连续事实可延伸至 Shot 的排他结束边界。静态首尾事实尽量使用真实帧时间；时间精度字段只表示观察精度，不能放大来掩盖缺少末帧。
 
@@ -69,7 +71,7 @@ python3 scripts/compile_contract.py examples/evidence-contract.input.json --outp
 python3 scripts/validate_contract.py /tmp/h3-contract.json
 ```
 
-第二条通过表示声明和派生输出相符。此教学例尚未观看媒体，以下命令**应当失败**：
+第二条通过表示声明和派生输出相符。旧教学输入不包含 narrative_review，只能作为兼容草稿；新任务必须先建立并完成确认。此教学例没有用户确认，也尚未观看媒体，以下命令**应当失败**：
 
 ```bash
 python3 scripts/validate_contract.py /tmp/h3-contract.json --require-reviewed
@@ -95,7 +97,8 @@ python3 scripts/validate_contract.py /tmp/h3-contract.json --require-reviewed
     "notes": "<事实与图像、接触顺序、终态、无新增声音、两种交付形式的检查结果>",
     "fact_text_checked": true,
     "route_parity_checked": true,
-    "reference_alignment_checked": true
+    "reference_alignment_checked": true,
+    "narrative_alignment_checked": true
   }
 }
 ```
@@ -106,15 +109,21 @@ python3 scripts/validate_contract.py /tmp/h3-contract.json --require-reviewed
 python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed --verify-local-media
 ```
 
-`generation_ready=true` 会强制同样的复核与本地文件校验，并要求真实媒体与已核实平台时长。设置这一输入值也会改变摘要，因此应先确认资源齐备、设置它、重新编译，然后执行最终复核。它不表示已经生成视频。
+`generation_ready=true` 会强制当前叙事确认/明确豁免、同样的媒体与语义复核、本地文件校验，并要求真实媒体与已核实平台时长。设置这一输入值也会改变完整输入摘要，因此应先确认资源齐备、设置它、重新编译，然后执行最终复核。它不表示已经生成视频。
 
 改源文件、事实文案、时间、Job 或能力参数都会使摘要失效；重新编译后旧 reviews 自动变成 unreviewed。只改 derived 会被逐字比较拒绝。未改输入而重新编译，会保留仍有效的复核。
+
+人机确认使用独立的 `narrative_digest(data)`，避免仅改语言或交付模式就重新问用户。它绑定源文件哈希、视觉时长、status/revision/summary/target/open_questions 与改编声明。先接收真实回复、更新理解及状态，再计算 receipt.scope_digest；函数和编译器都不会把 pending 自动改成 confirmed。改故事时必须同步复述；代码不能自动判断事实句是否改变含义。即使无需重新问用户，改变生产事实或 Job 后媒体/语义复核仍需重做。
+
+严格检查要求 semantic.narrative_alignment_checked=true。这是操作者实际核对后填写的声明：没有将用户解释冒充观察、没有回退到旧叙事、最终动作和结尾符合当前目标。脚本不能核实回复确实来自用户，也不能判断“对”是否回答了所有问题；宿主必须读取真实会话，不能伪造回执。
 
 复核记录是执行者声明，不是数字签名，也不是视觉识别器。文件哈希只能确认本地字节未换；不能证明图片来自声明的时间、文案准确或生成结果相似。不要替从未查看的证据填写 reviewed。
 
 ## 兼容与故障处理
 
 - schema_version=1 保留格式检查，始终是旧草稿；不能通过严格门槛或声明 generation_ready。不要只把版本号改成 2。
+- schema_version=2 无 narrative_review 时保留普通草稿编译，CLI 会提示 legacy draft；不能通过 --require-reviewed 或 generation_ready。已有文件不会自动获批。升级编译器后重新编译和复核，新任务不能利用兼容路径跳过确认。
+- narrative_review=pending 或确认过期：先沟通，不能为让测试通过而自填用户回复。明确跳过也要记录真实用户要求，保持与 confirmed 不同。
 - 缺少证据：补实际观看与采样，或将事实降为 uncertain。不要拿同一帧伪装多个时刻。
 - 丢失阶段：在事实层补原片真实动作并重新编译两套版本，不能只补某个输出字符串。
 - 音频门控失败：确认是否实际听过、目标是否支持声音；任一不成立时不编入音频事实。

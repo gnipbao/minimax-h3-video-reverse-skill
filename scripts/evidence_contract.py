@@ -15,7 +15,7 @@ import re
 
 from validate_contract import I2VA_PREFIX, number, validate_prompt
 
-VERSION = "h3-facts-2.0"
+VERSION = "h3-facts-2.1"
 KINDS = {"identity", "initial", "state", "action", "camera", "ending", "transition", "soundscape", "music"}
 AUDIO = {"soundscape", "music"}
 TEMPORAL = {"action", "camera", "transition"}
@@ -55,6 +55,61 @@ def digest(data):
     inputs = {k: v for k, v in data.items() if k not in {"derived", "compilation", "reviews"}}
     raw = json.dumps(inputs, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def narrative_digest(data):
+    """Bind a human-readable interpretation, not its delivery language or mode.
+
+    The caller must keep the summary aligned with changed facts. This hash
+    cannot read a conversation, infer consent or judge narrative fidelity.
+    """
+    review = data["narrative_review"]
+    source = data["source"]
+    scope = {
+        "source_sha256": source["media"]["sha256"],
+        "source_duration_s": source["duration_s"],
+        "intent": data["intent"],
+        "intentional_deviations": data["intentional_deviations"],
+        **{key: review[key] for key in ("status", "revision", "summary", "target", "open_questions")},
+    }
+    raw = json.dumps(scope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def narrative_review_errors(data, required=False):
+    """Check declarations only. Never synthesize a user's confirmation."""
+    if "narrative_review" not in data:
+        return ["A current narrative_review is required; legacy input is draft-only"] if required else []
+    review = data["narrative_review"]
+    if not isinstance(review, dict):
+        return ["narrative_review must be an object, not an implicit waiver"]
+    errors = []
+    status = review.get("status")
+    if status not in ("pending", "confirmed", "waived"):
+        errors.append("Narrative status must be pending, confirmed or waived")
+    if type(review.get("revision")) is not int or review["revision"] < 1:
+        errors.append("Narrative revision must be a positive integer")
+    if not nonempty(review.get("summary")) or not nonempty(review.get("target")):
+        errors.append("Narrative review needs a concrete summary and target")
+    questions = review.get("open_questions")
+    if not isinstance(questions, list) or any(not nonempty(q) for q in questions):
+        errors.append("Narrative open_questions must be a list of nonempty strings")
+    elif status == "confirmed" and questions:
+        errors.append("Confirmed narrative cannot leave material questions unresolved")
+    if status == "pending":
+        errors.append("Narrative confirmation is pending; present the interpretation and wait for the user")
+    if errors:
+        return errors
+    receipt = review.get("receipt")
+    if not isinstance(receipt, dict) or receipt.get("actor") != "user" or not nonempty(receipt.get("message")):
+        return ["Narrative confirmation or waiver requires an actual user reply; AI review is not consent"]
+    try:
+        current = narrative_digest(data)
+    except (KeyError, TypeError, ValueError):
+        return ["Narrative scope cannot be bound to this source and target"]
+    if receipt.get("scope_digest") != current:
+        return ["Narrative confirmation is stale; update the interpretation and obtain a current user decision"]
+    return []
 
 
 def file_digest(path):
@@ -113,6 +168,7 @@ def _input_errors(data):
         errors.append("end_frames must be true, false or null")
     if type(data.get("generation_ready")) is not bool:
         errors.append("generation_ready must be boolean")
+    errors.extend(narrative_review_errors(data, required=data.get("generation_ready") is True))
 
     segments = index_rows(data.get("segments"), "segments", errors)
     evidence = index_rows(data.get("evidence"), "evidence", errors)
@@ -384,6 +440,8 @@ def validate_v2(data, base_dir=None, require_reviewed=False, verify_local_media=
         errors.extend(f"{job['id']}: {e}" for e in validate_prompt(output["prompt"], job["mode"], job["duration_s"], data["capabilities"]["audio"] != "supported"))
     reviews = data.get("reviews", {})
     required = require_reviewed or data["generation_ready"]
+    if required and "narrative_review" not in data:
+        errors.extend(narrative_review_errors(data, required=True))
     for key in ("media", "semantic"):
         receipt = reviews.get(key, {}) if isinstance(reviews, dict) else {}
         if not isinstance(receipt, dict):
@@ -403,6 +461,8 @@ def validate_v2(data, base_dir=None, require_reviewed=False, verify_local_media=
                 errors.append("Semantic review must check fact wording and route parity")
             if key == "semantic" and data["delivery"] != "T2VA" and receipt.get("reference_alignment_checked") is not True:
                 errors.append("Semantic review must check image reference alignment against boundary states")
+            if key == "semantic" and "narrative_review" in data and receipt.get("narrative_alignment_checked") is not True:
+                errors.append("Semantic review must check facts and prompts against the user's narrative decision")
         elif required:
             errors.append(f"A current {key} review is required")
     if data["generation_ready"]:
