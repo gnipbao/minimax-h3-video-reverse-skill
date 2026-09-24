@@ -29,7 +29,8 @@ def summarize(data: dict) -> dict:
     duration = numeric(video.get("duration"))
     start = numeric(video.get("start_time"))
     rotation = next((s.get("rotation") for s in video.get("side_data_list", []) if "rotation" in s), None)
-    has_audio = any(s.get("codec_type") == "audio" for s in streams)
+    audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+    has_audio = audio is not None
     return {
         "video_stream_index": video.get("index"),
         "width": video.get("width"),
@@ -44,6 +45,9 @@ def summarize(data: dict) -> dict:
         "nominal_frame_rate": video.get("r_frame_rate"),
         "time_base": video.get("time_base"),
         "audio_track_present": has_audio,
+        "audio_stream_index": audio.get("index") if audio else None,
+        "audio_start_s": numeric(audio.get("start_time")) if audio else None,
+        "audio_duration_s": numeric(audio.get("duration")) if audio else None,
         "audio_status": "unavailable" if has_audio else "no_track",
         "visual_content_reviewed": False,
         "audio_content_reviewed": False,

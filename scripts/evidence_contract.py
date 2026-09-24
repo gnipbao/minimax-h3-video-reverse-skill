@@ -12,10 +12,12 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 
 from validate_contract import I2VA_PREFIX, number, validate_prompt
 
-VERSION = "h3-facts-2.1"
+VERSION = "h3-facts-2.2"
 KINDS = {"identity", "initial", "state", "action", "camera", "ending", "transition", "soundscape", "music"}
 AUDIO = {"soundscape", "music"}
 TEMPORAL = {"action", "camera", "transition"}
@@ -70,6 +72,7 @@ def narrative_digest(data):
         "source_duration_s": source["duration_s"],
         "intent": data["intent"],
         "intentional_deviations": data["intentional_deviations"],
+        "audio_handoff": data.get("audio_handoff"),
         **{key: review[key] for key in ("status", "revision", "summary", "target", "open_questions")},
     }
     raw = json.dumps(scope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
@@ -146,6 +149,16 @@ def _input_errors(data):
         errors.append("source.media needs a local path and SHA-256")
     if source.get("audio_status") not in {"verified", "no_track", "unavailable", "not_requested"}:
         errors.append("Invalid source audio_status")
+    audio_handoff = data.get("audio_handoff")
+    if audio_handoff is not None:
+        if audio_handoff != {"method": "postproduction_copy"}:
+            errors.append("audio_handoff supports only postproduction_copy; Ref2VA is a separate verified handoff")
+        if source.get("audio_track_present") is not True or source.get("audio_status") not in {"verified", "unavailable"}:
+            errors.append("Original-audio handoff requires a declared source audio track")
+        if type(source.get("audio_stream_index")) is not int or source["audio_stream_index"] < 0:
+            errors.append("Original-audio handoff requires a nonnegative source audio stream index")
+        if data.get("intent") != "faithful":
+            errors.append("One-to-one original-audio handoff requires faithful source timing")
     if data.get("analysis_status") not in {"PARTIAL", "COMPLETE"}:
         errors.append("v2 analysis_status must be PARTIAL or COMPLETE")
     if data.get("analysis_status") == "COMPLETE" and source.get("audio_status") == "unavailable":
@@ -401,6 +414,30 @@ def render(data):
                                       and not (f["kind"] == "identity" and f["range_s"][0] <= start and f["range_s"][1] >= end)),
             "end_frame_prompt": " ".join(facts[x]["text"] for x in closing) if job["mode"] == "FL2VA" else "",
         })
+    if data.get("audio_handoff") is not None:
+        route_maps = {route: [] for route in ("T2VA", "I2V") if data["delivery"] in (route, "DUAL")}
+        for route, intervals in route_maps.items():
+            route_jobs = [job for job in data["jobs"] if ("T2VA" if job["mode"] == "T2VA" else "I2V") == route]
+            for job in sorted(route_jobs, key=lambda item: item["source_range_s"][0]):
+                target_start = intervals[-1]["target_range_s"][1] if intervals else 0.0
+                intervals.append({
+                    "job_id": job["id"], "source_range_s": job["source_range_s"],
+                    "target_range_s": [target_start, target_start + job["duration_s"]],
+                })
+        result["audio_handoff"] = {
+            "method": "postproduction_copy",
+            "source_stream_index": data["source"]["audio_stream_index"],
+            "source_video_start_s": data["source"].get("video_start_s"),
+            "source_audio_start_s": data["source"].get("audio_start_s"),
+            "source_audio_duration_s": data["source"].get("audio_duration_s"),
+            "audio_offset_from_video_s": (
+                data["source"]["audio_start_s"] - data["source"]["video_start_s"]
+                if number(data["source"].get("audio_start_s")) and number(data["source"].get("video_start_s"))
+                else None
+            ),
+            "route_maps": route_maps,
+            "assembly": "Assemble one visual route, discard its generated audio, then lay the original source audio stream once on the source PTS timeline. Check start offset, cuts, lip sync and tail.",
+        }
     return result
 
 
@@ -488,4 +525,21 @@ def validate_v2(data, base_dir=None, require_reviewed=False, verify_local_media=
                         errors.append(f"{label}: local asset hash mismatch")
                 except OSError:
                     errors.append(f"{label}: local asset missing or unreadable")
+            if data.get("audio_handoff") is not None:
+                source_path = Path(base_dir) / data["source"]["media"]["path"]
+                executable = shutil.which("ffprobe")
+                if executable is None:
+                    errors.append("Original-audio handoff verification requires FFprobe")
+                elif source_path.is_file():
+                    try:
+                        probe = subprocess.run(
+                            [executable, "-v", "error", "-protocol_whitelist", "file", "-show_streams", "-of", "json", str(source_path)],
+                            capture_output=True, text=True, timeout=60, check=True,
+                        )
+                        streams = json.loads(probe.stdout).get("streams", [])
+                        matches = [s for s in streams if s.get("codec_type") == "audio" and s.get("index") == data["source"]["audio_stream_index"]]
+                        if not matches:
+                            errors.append("Original-audio handoff stream index does not match a real source audio stream")
+                    except (OSError, ValueError, subprocess.SubprocessError):
+                        errors.append("Original-audio handoff source stream could not be verified")
     return errors

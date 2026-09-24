@@ -20,18 +20,21 @@
 
 | 部分 | 内容 | 规则 |
 | --- | --- | --- |
-| source | media、duration_s、timestamp_precision_s、visual_access、audio_status | duration 是视觉范围；media 包含 path、sha256 |
+| source | media、duration_s、timestamp_precision_s、visual_access、audio_status；继承原声时另记 audio_track_present、audio_stream_index、video_start_s、audio_start_s、audio_duration_s | duration 是视觉范围；media 包含 path、sha256；音频元数据不等于听音事实 |
 | narrative_review | status、revision、summary、target、open_questions、receipt | 新任务必填；pending 不能编译，confirmed/waived 需真实用户回复及当前 scope_digest；不是 H3 字段 |
 | capabilities | max_job_duration_s、duration_verified、end_frames、audio | audio = supported / unsupported / unknown；独立于是否听过源音轨 |
 | segments | id、kind=shot、start_s、end_s、end_condition | 完整连续覆盖；黑场/字卡要保留；end_condition = settled / ongoing / cutoff / unknown |
 | evidence | id、kind、range_s、source_sha256、asset | kind = frame / clip / audio；单帧起止时间相同，使用真实 PTS |
 | facts | id、segment_id、kind、range_s、status、evidence_ids、text | 一条一句可观察内容；时间在字段中，不在 text 中重复手写绝对时刻 |
 | jobs | id、mode、source_range_s、duration_s、opening_fact_ids、closing_fact_ids、reference_images | mode = T2VA / I2VA / FL2VA；图像资源包含 path、sha256 |
+| audio_handoff | 可选 `{"method":"postproduction_copy"}` | 仅用于保真且有源音轨；编译成跨 Job 的连续交接，不进入 H3 三字段，也不证明口型同步 |
 | derived | 编译生成的 Prompt、参考图文案、事实 ID | 不手工编辑；重新生成可以逐字比对 |
 | compilation | 编译器版本、input_digest | 绑定全部输入；不是人工复核证明 |
 | reviews | media、semantic | 记录真实执行者、具体核对事项、相同的 input_digest |
 
 所有媒体路径相对契约所在目录，也可使用本机绝对路径。CLI 输出到不同目录时会重定位相对路径，并据新输入重新编译；原观察文件保持不动。真实契约保留在私有运行目录，开源仓库仅放教学输入。
+
+`audio_handoff` 只支持最终装配复制整条原音轨；不把 Ref2VA 的六字段格式塞进三字段编译器。它允许 `audio_status: unavailable`，因为原音频信号可在未听懂的情况下保留；严格本地检查使用 FFprobe 确认声明的流索引。其 `derived.audio_handoff.route_maps` 对 T2VA 和 I2V 分别记录源范围到装配时间的映射，按原源 PTS 只铺一次音轨。切镜、分段或 DUAL 不应重复音轨开头。若改时长或重排，先处理改编后的声音方案；本模式禁止静默变速。其它路径见 [声音继承](audio-inheritance.md)。
 
 ## 事实的精度
 
@@ -113,7 +116,7 @@ python3 scripts/validate_contract.py /path/to/contract.json --require-reviewed -
 
 改源文件、事实文案、时间、Job 或能力参数都会使摘要失效；重新编译后旧 reviews 自动变成 unreviewed。只改 derived 会被逐字比较拒绝。未改输入而重新编译，会保留仍有效的复核。
 
-人机确认使用独立的 `narrative_digest(data)`，避免仅改语言或交付模式就重新问用户。它绑定源文件哈希、视觉时长、status/revision/summary/target/open_questions 与改编声明。先接收真实回复、更新理解及状态，再计算 receipt.scope_digest；函数和编译器都不会把 pending 自动改成 confirmed。改故事时必须同步复述；代码不能自动判断事实句是否改变含义。即使无需重新问用户，改变生产事实或 Job 后媒体/语义复核仍需重做。
+人机确认使用独立的 `narrative_digest(data)`，避免仅改语言或交付模式就重新问用户。它绑定源文件哈希、视觉时长、status/revision/summary/target/open_questions、声音交接路线与改编声明。先接收真实回复、更新理解及状态，再计算 receipt.scope_digest；函数和编译器都不会把 pending 自动改成 confirmed。改故事或声音目标时必须同步复述；代码不能自动判断事实句是否改变含义。即使无需重新问用户，改变生产事实或 Job 后媒体/语义复核仍需重做。
 
 严格检查要求 semantic.narrative_alignment_checked=true。这是操作者实际核对后填写的声明：没有将用户解释冒充观察、没有回退到旧叙事、最终动作和结尾符合当前目标。脚本不能核实回复确实来自用户，也不能判断“对”是否回答了所有问题；宿主必须读取真实会话，不能伪造回执。
 
