@@ -10,18 +10,11 @@
 
 ## 开源赞助商
 
-<p align="center">
-  <a href="https://www.whatstoken.ai/home">
-    <img src="assets/sponsors/whatstokenai-logo.png" width="280" height="280" alt="WhatsTokenAI 品牌 Logo" />
-  </a>
-</p>
+感谢支持本项目的开源赞助商。
 
-<h3 align="center"><a href="https://www.whatstoken.ai/home">WhatsTokenAI</a></h3>
-
-<p align="center">
-  统一 AI 模型 API 接入平台，提供兼容 OpenAI 格式的接口。<br />
-  感谢 <strong>WhatsTokenAI</strong> 对本项目的支持 · <a href="https://www.whatstoken.ai/home">访问官网</a>
-</p>
+| 赞助商 | 服务介绍 |
+| :---: | --- |
+| <a href="https://www.whatstoken.ai/home"><img src="assets/sponsors/whatstokenai-logo.png" width="280" height="280" alt="WhatsTokenAI 品牌 Logo" /><br /><strong>WhatsTokenAI</strong></a> | 统一 AI 模型 API 接入平台，提供兼容 OpenAI 格式的接口，方便开发者接入多种 AI 模型。<br /><br />[访问官网](https://www.whatstoken.ai/home) |
 
 ## 快速开始
 
