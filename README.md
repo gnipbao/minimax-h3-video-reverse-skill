@@ -6,7 +6,7 @@
 
 由 [知识猫 / gnipbao](https://github.com/gnipbao) 维护，提供 Agent Skill、使用教程、原创示例和本地校验工具。支持 **AUTO · T2VA · I2V · DUAL**。
 
-[快速开始](#快速开始) · [使用示例](#使用示例) · [工作原理](#工作原理) · [声音怎么继承](#声音怎么继承) · [文档与示例](#文档与示例) · [开源赞助商](#开源赞助商)
+[0.5.0 新版能力](#050从看见效果到保留效果) · [快速开始](#快速开始) · [使用示例](#使用示例) · [工作原理](#工作原理) · [声音怎么继承](#声音怎么继承) · [文档与示例](#文档与示例) · [开源赞助商](#开源赞助商)
 
 ## 开源赞助商
 
@@ -15,6 +15,12 @@
 | 赞助商 | 服务介绍 |
 | :---: | --- |
 | <a href="https://www.whatstoken.ai/register?aff=1000984916"><img src="assets/sponsors/whatstokenai-logo.png" width="100" height="100" alt="WhatsTokenAI 品牌 Logo" /><br /><strong>WhatsTokenAI</strong></a> | 统一 AI 模型 API 接入平台，提供兼容 OpenAI 格式的接口，方便开发者接入多种 AI 模型。<br /><br />[注册体验](https://www.whatstoken.ai/register?aff=1000984916) |
+
+## 0.5.0：从看见效果到保留效果
+
+产品或艺术展示不能只数动作。每镜先辨认当前观察方向及可见表面，再记录操作前后哪些区域露出/被覆盖、开口或轮廓怎样变化，最后检查这些必保项是否进入实际可复制文本。格式、事实引用和 reviewed 声明都无法判断画面细节是否被漏掉；语义复核使用“证据 → 事实 → 最终句”短表，见 [事实契约](references/evidence-contract.md#必保视觉锚点核对) 和 [原创教学示例](examples/05-view-and-effect.md)。
+
+“一段完整 I2V”只改变排版，每个真实硬切镜头仍有自己的 Job 与首帧。纯聊天可运行 `scripts/validate_prompt.py`；多源镜声明与多目标 I2V Shot 会被拦截，正面首帧没有呈现的背面结构需对应参考图。连续改编开关只声明已有明确授权，不能因用户要一段文字就使用它。细节见 [输出约定](references/output-contract.md)。
 
 ## 快速开始
 
@@ -62,7 +68,7 @@ $minimax-h3-video-reverse
 | **I2V** | 先锁定外观，再生成动作 | 每镜首帧或首尾帧 Prompt、Motion Prompt、约束与装配说明 |
 | **DUAL** | 同时需要整体与逐镜方案 | 基于同一事实表的 T2VA 与 I2V 两套版本 |
 
-I2V 默认采用单首帧。只有平台支持首尾帧、且尾帧能帮助约束变化时，才采用首尾帧路线；真实切镜保留在装配中。详细交付格式见 [输出契约](references/output-contract.md)。
+I2V 默认采用单首帧。只有平台支持首尾帧、且尾帧能帮助约束变化时，才采用首尾帧路线；真实切镜保留在装配中。“一段提示词”只改变排版；I2V 中每个真实硬切镜头仍需独立生成任务与对应首帧。详细交付格式见 [输出契约](references/output-contract.md)。
 
 ## 使用示例
 
@@ -153,7 +159,7 @@ flowchart LR
 - **完整视频是依据。** 只有截图、缩略图或打不开的链接时，只能分析可见部分，不能补造完整时间线。
 - **分段服从平台能力。** “30 秒段落”是编排需求；单次生成时长与首尾帧、音频参考能力，以目标平台实际支持为准。格式见 [H3 适配](references/h3-adapter.md)。
 - **生成由你接续。** 本项目交付提示词与素材交接说明，不自动调用付费生成、上传视频或发布作品。
-- **验证范围公开。** 当前为 **0.4.0 候选版本**，并非已发布的 GitHub Release。自动校验覆盖结构、链接、事实契约和回归行为；H3 成片相似度、口型与生成效果尚未完成对照。详见 [验证记录](docs/validation.md)。
+- **验证范围公开。** 当前为 **0.5.0 候选版本**，并非已发布的 GitHub Release。自动校验覆盖结构、链接、事实契约和回归行为；H3 成片相似度、口型与生成效果尚未完成对照。详见 [验证记录](docs/validation.md)。
 
 ## 文档与示例
 
@@ -162,11 +168,12 @@ flowchart LR
 | Agent 如何执行完整流程 | [SKILL.md](SKILL.md) |
 | 确认、纠正与多轮修改 | [确认协议](references/narrative-confirmation.md) · [原创教学对话](examples/04-narrative-confirmation.md) |
 | 10 秒动作与逐镜 I2V | [动物动作示例](examples/01-cat-and-ball.md) |
+| 逐镜视角、覆盖变化与视觉效果 | [多表面产品示例](examples/05-view-and-effect.md) · [必保视觉锚点核对](references/evidence-contract.md#必保视觉锚点核对) |
 | 首尾帧如何约束变化 | [产品展开示例](examples/02-product-unfolding.md) |
 | 长片如何拆成实际任务 | [30 秒分段示例](examples/03-long-video-plan.md) |
 | 能力不足时怎么办 | [观察边界](references/video-observation.md) · [人工反测](examples/retest-prompts.md) |
 | 工程化编译与复核 | [事实契约](references/evidence-contract.md) · [v2 教学输入](examples/evidence-contract.input.json) |
-| 每次改进的依据与验证 | [0.2 事实绑定](docs/evolution-0.2.md) · [0.3 人机确认](docs/evolution-0.3.md) · [0.4 声音继承](docs/evolution-0.4.md) |
+| 每次改进的依据与验证 | [0.2 事实绑定](docs/evolution-0.2.md) · [0.3 人机确认](docs/evolution-0.3.md) · [0.4 声音继承](docs/evolution-0.4.md) · [0.5 视觉效果核对](docs/evolution-0.5.md) |
 
 示例均为原创教学设定，不附第三方视频，也不作为真实视频观察或模型生成记录。
 
@@ -178,6 +185,10 @@ flowchart LR
 ```bash
 # 在仓库目录运行：检查结构、链接、示例与回归
 python3 scripts/check_repo.py
+
+# 检查聊天 H3 块；参数按该生成任务填写，源镜数来自实际观察
+python3 scripts/validate_prompt.py /tmp/h3-shot.txt \
+  --mode I2VA --duration 4 --source-shot-count 1 --audio-omitted
 
 # 核对本地视频元数据；不代表已看过画面或听过声音
 python3 scripts/probe_video.py /path/to/reference.mp4
@@ -194,7 +205,7 @@ SKILL.md                 Agent 入口与执行协议
 agents/openai.yaml       Codex 显示信息
 references/              观察、确认、声音、输出与 H3 适配
 examples/                原创教学案例与人工反测
-scripts/                 PTS 抽帧、事实编译与仓库检查
+scripts/                 PTS 抽帧、事实编译、提示词校验与仓库检查
 tests/                   契约、分段、确认与声音交接回归
 docs/                    验证范围、版本演进与回滚记录
 ```

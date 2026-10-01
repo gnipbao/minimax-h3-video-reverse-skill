@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     errors = []
-    required = ["SKILL.md", "README.md", "LICENSE", "agents/openai.yaml", "docs/validation.md", "examples/contract.json", "examples/evidence-contract.input.json", "references/narrative-confirmation.md", "examples/04-narrative-confirmation.md"]
+    required = ["SKILL.md", "README.md", "LICENSE", "agents/openai.yaml", "docs/validation.md", "examples/contract.json", "examples/evidence-contract.input.json", "references/narrative-confirmation.md", "examples/04-narrative-confirmation.md", "examples/05-view-and-effect.md", "scripts/validate_prompt.py"]
     for name in required:
         if not (ROOT / name).is_file():
             errors.append(f"Missing {name}")
@@ -70,6 +70,9 @@ def main() -> int:
     product = (ROOT / "examples/02-product-unfolding.md").read_text()
     prompt = product.split("## H3 FL2VA 可复制块", 1)[1].split("```text\n", 1)[1].split("\n```", 1)[0]
     errors.extend(validate_prompt(prompt, "FL2VA", 8, True))
+    surface = (ROOT / "examples/05-view-and-effect.md").read_text()
+    surface_prompt = surface.split("## 单镜 H3 I2VA 可复制格式示例", 1)[1].split("```text\n", 1)[1].split("\n```", 1)[0]
+    errors.extend(validate_prompt(surface_prompt, "I2VA", 3, True))
     if errors:
         for error in errors:
             print(f"FAIL: {error}")

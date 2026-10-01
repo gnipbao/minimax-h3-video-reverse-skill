@@ -23,6 +23,8 @@ Prompt 语言：英文（默认）/ 中文
 
 确认完成后的最终内容必须与当前复述一致。H3 三字段保持原样，不把用户问答或确认字段塞进生成块。仅要一段的用户得到一段生成描述，必要能力说明放块外；一段文本不代表平台能够单次生成任意时长。
 
+若选择 I2V 且原片有真实硬切，每个 Job 仍独立、每镜的生成描述可以各为一段；全片连续文字只能标为装配概述，不能作为绑定一个 Picture 的单 I2VA 可执行块交付。不能因用户要“一段”就自动转成 T2VA 或擅自改为一镜到底。不同朝向的隐含表面需要对应参考图；正面首帧不足以约束背面未见的结构。
+
 ## 状态说明
 
 放在复制代码块之外，保持短小：
@@ -70,6 +72,8 @@ non_diegetic_music: <已核实的观众侧配乐；未核实或无相应内容�
 ## I2V 逐镜生产包
 
 共享视觉锚点只放跨镜头真实稳定的内容。混合媒介或昼夜变化不要强行锁定为全片同一风格/光照。
+
+每镜静态描述明确当前观察方向、可见表面和初始覆盖关系；Motion 写由操作造成的具体视觉变化及截止状态。成稿检查见 [必保视觉锚点核对](evidence-contract.md#必保视觉锚点核对)，不能只核对事件动词是否齐全。
 
 ```text
 global_visual_dna: <真实共享锚点；无全片规律可省略。>
@@ -119,5 +123,7 @@ I2V-B 使用 `start_frame_time / start_frame_prompt / end_frame_time / end_frame
 新生产包用 `examples/evidence-contract.input.json` 的 v2 事实结构，另按 [确认协议](narrative-confirmation.md) 建立真实任务的 narrative_review，再按 [证据契约](evidence-contract.md) 编译和复核。若选择最终装配原声，可选填 `audio_handoff: {"method": "postproduction_copy"}`，同时把 `scripts/probe_video.py` 返回的 `audio_track_present`、`audio_stream_index`、`video_start_s`、`audio_start_s`、`audio_duration_s` 记入 `source`；编译器给 T2VA/I2V 各自生成连续映射与音频相对画面起点的偏移，严格本地校验核对真实流索引。这条路线只声明音轨交接，不声称口型已同步；Ref2VA 六段格式仍按平台能力单独交接。
 
 教学输入没有用户确认，只能编译为兼容草稿；不能复制它绕过新任务确认。首帧与 Motion、H3 三字段都来自同一组事实；直接改派生文案会被拒绝。每条交付路线必须独立覆盖源时间线，分段首帧必须符合切分点当前状态。用户素材路径、截图与证据账本留在私有运行目录。
+
+纯聊天最终块也可独立校验：`python3 scripts/validate_prompt.py PROMPT.txt --mode I2VA --duration 4 --source-shot-count 1 --audio-omitted`。`--source-shot-count` 是该 Job 覆盖的真实源镜数，来自人工观察，脚本不识别切镜；I2VA/FL2VA 多源镜会被拒绝。只有用户已明确授权改连续运动且改编已记录，才可声明 `--continuous-adaptation`，该开关不是授权证据。脚本只读文件、复用已有三字段与单镜门槛；不判断素材、平台上限或视觉语义。
 
 `examples/contract.json` 是 v1 兼容格式草稿；不能声明生成就绪。v2 中 `generation_ready` 会要求当前叙事确认或明确豁免、有效媒体/语义复核、已核实平台时长和本地素材哈希通过，但仍不代表模型已运行或输出已通过相似度检查。教学例的资源未附带，该值必须为 false。
