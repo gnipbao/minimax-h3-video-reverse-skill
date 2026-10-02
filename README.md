@@ -6,7 +6,7 @@
 
 由 [知识猫 / gnipbao](https://github.com/gnipbao) 维护，提供 Agent Skill、使用教程、原创示例和本地校验工具。支持 **AUTO · T2VA · I2V · DUAL**。
 
-[0.5.0 新版能力](#050从看见效果到保留效果) · [快速开始](#快速开始) · [使用示例](#使用示例) · [工作原理](#工作原理) · [声音怎么继承](#声音怎么继承) · [文档与示例](#文档与示例) · [开源赞助商](#开源赞助商)
+[0.6.0 新版能力](#060把疑点变成看得清的证据) · [快速开始](#快速开始) · [使用示例](#使用示例) · [工作原理](#工作原理) · [声音怎么继承](#声音怎么继承) · [文档与示例](#文档与示例) · [开源赞助商](#开源赞助商)
 
 ## 开源赞助商
 
@@ -15,6 +15,12 @@
 | 赞助商 | 服务介绍 |
 | :---: | --- |
 | <a href="https://www.whatstoken.ai/register?aff=1000984916"><img src="assets/sponsors/whatstokenai-logo.png" width="100" height="100" alt="WhatsTokenAI 品牌 Logo" /><br /><strong>WhatsTokenAI</strong></a> | 统一 AI 模型 API 接入平台，提供兼容 OpenAI 格式的接口，方便开发者接入多种 AI 模型。<br /><br />[注册体验](https://www.whatstoken.ai/register?aff=1000984916) |
+
+## 0.6.0：把疑点变成看得清的证据
+
+先用全片联系表定位，再根据疑点升级读取尺度：部件、文字和材质看原尺寸帧；动作、遮挡与切镜看密集序列和前后交接。图片要实际返回视觉查看工具，生成路径不算看过。每镜先说清新增了什么可见信息，细节发现再写回整体理解与事实，避免所有片段都被压成“展示产品”。方法来源为已检查的 Hypit 参考观察文档及一次本地成功记录；不依赖其 Runtime，也不据此声称另一视觉模型的普遍优势。
+
+`scripts/build_review_sheet.py` 读取既有抽帧 manifest，输出带真实时间的分页 PNG 和原图索引，依赖当前环境已有 Pillow。工具不裁切或重绘内容，不自动标为 reviewed。视觉纠错可给用户一张初态—关键变化—截止态源帧图；它用于检查理解，单镜 I2V 仍使用对应原始首帧。完整步骤见 [观察流程](references/video-observation.md#疑点驱动的视觉返图) 和 [演练](examples/06-visual-return.md)。
 
 ## 0.5.0：从看见效果到保留效果
 
@@ -125,7 +131,7 @@ flowchart LR
   F --> G[核对时长、首尾状态与声音交接]
 ```
 
-1. **完整看，再补细节。** 从全局浏览、真实切镜、连续时间覆盖，到关键动作加密检查，最后倒查首尾与末段。
+1. **完整看，再补细节。** 从全局浏览、真实切镜、连续时间覆盖，到关键动作加密检查，最后倒查首尾与末段。根据具体疑点打开原尺寸帧、邻接序列或前后交接片段，实际查看后再修订理解。
 2. **追踪变化。** 分开记录人物动作、相机运动、道具持有、接触、遮挡和终态；未知内容不靠常识填满。
 3. **确认表达。** 剧情核对因果和反转，舞蹈核对动作，艺术展示核对层次与视点变化，操作演示核对步骤与反馈。
 4. **从同一组事实写输出。** 文生与图生版本共用镜头顺序、事件和结尾；工程化生产包通过事实契约编译，修改后重新复核。
@@ -159,7 +165,7 @@ flowchart LR
 - **完整视频是依据。** 只有截图、缩略图或打不开的链接时，只能分析可见部分，不能补造完整时间线。
 - **分段服从平台能力。** “30 秒段落”是编排需求；单次生成时长与首尾帧、音频参考能力，以目标平台实际支持为准。格式见 [H3 适配](references/h3-adapter.md)。
 - **生成由你接续。** 本项目交付提示词与素材交接说明，不自动调用付费生成、上传视频或发布作品。
-- **验证范围公开。** 当前为 **0.5.0 候选版本**，并非已发布的 GitHub Release。自动校验覆盖结构、链接、事实契约和回归行为；H3 成片相似度、口型与生成效果尚未完成对照。详见 [验证记录](docs/validation.md)。
+- **验证范围公开。** 当前为 **0.6.0 候选版本**，并非已发布的 GitHub Release。自动校验覆盖结构、链接、事实契约、源帧联系表和回归行为；H3 成片相似度、口型与生成效果尚未完成对照。详见 [验证记录](docs/validation.md)。
 
 ## 文档与示例
 
@@ -169,18 +175,19 @@ flowchart LR
 | 确认、纠正与多轮修改 | [确认协议](references/narrative-confirmation.md) · [原创教学对话](examples/04-narrative-confirmation.md) |
 | 10 秒动作与逐镜 I2V | [动物动作示例](examples/01-cat-and-ball.md) |
 | 逐镜视角、覆盖变化与视觉效果 | [多表面产品示例](examples/05-view-and-effect.md) · [必保视觉锚点核对](references/evidence-contract.md#必保视觉锚点核对) |
+| 细节看不清时怎样补看与纠错 | [疑点驱动返图](references/video-observation.md#疑点驱动的视觉返图) · [源帧复核演练](examples/06-visual-return.md) |
 | 首尾帧如何约束变化 | [产品展开示例](examples/02-product-unfolding.md) |
 | 长片如何拆成实际任务 | [30 秒分段示例](examples/03-long-video-plan.md) |
 | 能力不足时怎么办 | [观察边界](references/video-observation.md) · [人工反测](examples/retest-prompts.md) |
 | 工程化编译与复核 | [事实契约](references/evidence-contract.md) · [v2 教学输入](examples/evidence-contract.input.json) |
-| 每次改进的依据与验证 | [0.2 事实绑定](docs/evolution-0.2.md) · [0.3 人机确认](docs/evolution-0.3.md) · [0.4 声音继承](docs/evolution-0.4.md) · [0.5 视觉效果核对](docs/evolution-0.5.md) |
+| 每次改进的依据与验证 | [0.2 事实绑定](docs/evolution-0.2.md) · [0.3 人机确认](docs/evolution-0.3.md) · [0.4 声音继承](docs/evolution-0.4.md) · [0.5 视觉效果核对](docs/evolution-0.5.md) · [0.6 疑点驱动返图](docs/evolution-0.6.md) |
 
 示例均为原创教学设定，不附第三方视频，也不作为真实视频观察或模型生成记录。
 
 <details>
 <summary><strong>开发者：本地辅助工具与仓库结构</strong></summary>
 
-阅读 Skill 和使用聊天流程不要求 Python。编译与检查工具需要 Python 3.10+；媒体探测需已安装 FFprobe，抽帧另需 FFmpeg。脚本使用 Python 标准库，不自动下载依赖或读取密钥。
+阅读 Skill 和使用聊天流程不要求 Python。编译与检查工具需要 Python 3.10+；媒体探测需已安装 FFprobe，抽帧另需 FFmpeg。核心校验脚本使用 Python 标准库；帧图联系表工具另需已安装 Pillow。不自动下载依赖或读取密钥。
 
 ```bash
 # 在仓库目录运行：检查结构、链接、示例与回归
@@ -196,6 +203,10 @@ python3 scripts/probe_video.py /path/to/reference.mp4
 # 选取关键帧，并自动包含首尾帧；输出后仍需实际观看
 python3 scripts/sample_frames.py /path/to/reference.mp4 \
   --output /tmp/h3-frames-new --at 0.5 2 4
+
+# 用已有帧清单生成带实际时间的联系表；之后仍需打开图片查看
+python3 scripts/build_review_sheet.py /tmp/h3-frames-new/manifest.json \
+  --output /tmp/h3-review-new --question "What changes between these frames?"
 ```
 
 生产包的编译与严格检查见 [事实契约](references/evidence-contract.md)。真实任务需要当前用户确认或明确豁免，以及实际媒体和语义复核。教学输入只用于格式演示，不能直接声明生成就绪。校验器检查声明与文件一致性，不验证用户是否真的确认，也不判断生成画面是否相似。
@@ -205,8 +216,8 @@ SKILL.md                 Agent 入口与执行协议
 agents/openai.yaml       Codex 显示信息
 references/              观察、确认、声音、输出与 H3 适配
 examples/                原创教学案例与人工反测
-scripts/                 PTS 抽帧、事实编译、提示词校验与仓库检查
-tests/                   契约、分段、确认与声音交接回归
+scripts/                 PTS 抽帧、源帧联系表、事实编译、提示词校验与仓库检查
+tests/                   契约、分段、确认、声音交接与联系表回归
 docs/                    验证范围、版本演进与回滚记录
 ```
 
